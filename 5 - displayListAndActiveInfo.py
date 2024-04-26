@@ -17,9 +17,25 @@ effectEntryWindow = None
 tableInitiativeList = pd.read_excel("initiativeList.xlsx")
 playerList = tableInitiativeList['Character Name'].str.strip().to_list()
 
+def addCombatant():
+    global combatantAddWindowName
+    global combatantAddWindowInitiative
+    global tableInitiativeList
+
+    newRow = pd.Series({'Character Name': combatantAddWindowName.get(),'Initiative Total': combatantAddWindowInitiative.get()})
+    tableInitiativeList = pd.concat([tableInitiativeList, newRow.to_frame().T], ignore_index=True)
+    tableInitiativeList = tableInitiativeList.sort_values(
+            by=["Initiative Total", "Initiative Bonus", "Dexterity Bonus", "Dexterity Score", "Dice Roll", "Hit Points", "Character Name"],
+            ascending=[False, False, False, False, False, False, False])
+    
+    combatantAddWindow.withdraw()
+
 
 def cancelEffectAddWindow():
     effectAddWindow.withdraw()
+
+def cancelAddCombatant():
+    combatantAddWindow.withdraw()
 
 
 def closeItemRemoveWindow():
@@ -153,46 +169,10 @@ def addEffect():
 
     openEffectAddWindow()        
 
-'''
-def saveEffect():
-    global effectName
-    global effectEntryWindow
-    global playerList
-    global tableInitiativeList
-
-    effectName = nameTextBox.get()
-
-    newRow = pd.Series({'Character Name': effectName,'Good': 0,'Bad': 0})
-
-    tableInitiativeList = pd.concat([tableInitiativeList.iloc[:active+1], pd.DataFrame([newRow]), tableInitiativeList.iloc[active+1:]], ignore_index=True)
-      
-    playerList = tableInitiativeList['Character Name'].str.strip().to_list()
-    windowPlayerList.config(text=f"Initiative Order\n\n{'\n'.join(playerList)}\n\n Combat round: {roundCounter}")
-    windowActivePlayer.config(text=f"Active combatant\n\n{playerList[active]}\n\n Combat round: {roundCounter}  Turn: {active+1}")
-    effectEntryWindow.destroy()
-'''
 
 
 def addSomeone():
-    global effectName
-    global effectEntryWindow
-    global playerList
-    global tableInitiativeList
-
-
-    #effectName = nameTextBox.get()
-
-    newRow = pd.Series({'Character Name': effectName,'Good': 0,'Bad': 0})
-
-    tableInitiativeList = pd.concat([tableInitiativeList.loc[:active+1], pd.DataFrame([newRow]), tableInitiativeList.loc[active+1:]], ignore_index=True)
-    
-    windowPlayerList.config(text=f"Initiative Order\n\n{'\n'.join(playerList)}\n\n Combat round: {roundCounter}")
-    windowActivePlayer.config(text=f"Active combatant\n\n{playerList[active]}\n\n Combat round: {roundCounter}  Turn: {active+1}")
-    effectEntryWindow.withdraw()
-
-
-
-
+    combatantAddWindow.deiconify()
 
 def addToTable():
     global selectedCombatants
@@ -307,23 +287,31 @@ noButton = TK.Button(itemRemoveWindow, text = "Cancel", width = 10, command = cl
 noButton.place(x=115, y=50)
 #Item removal Window ends here
 
-'''
-#Item add window starts here
-effectAddWindow = TK.Tk()
-effectAddWindow.withdraw()
-effectAddWindow.geometry("200x200")
-effectAddWindow.title("Add a spell or effect")
+#Person add window starts here
+combatantAddWindow = TK.Tk()
+combatantAddWindow.withdraw()
+combatantAddWindow.geometry("200x200")
+combatantAddWindow.title("Add a spell or effect")
 
-effectAddWindowText = TK.Label(effectAddWindow, text="Enter Effect Name") 
-effectAddWindowText.place(x=5, y=5, width=190)
+combatantAddWindowLabel1 = TK.Label(combatantAddWindow, text="Enter Name") 
+combatantAddWindowLabel1.place(x=5, y=5, width=190, height=20)
 
-effectAddWindowTextBox = Entry(effectAddWindow)
-effectAddWindowTextBox.place(x=5, y=25, width=190)
+combatantAddWindowName = TK.Entry(combatantAddWindow)
+combatantAddWindowName.place(x=5, y=30, width=190, height=20)
 
-saveButton = TK.Button(effectAddWindow, text = "Save", width = 35, command=saveEffect)
-saveButton.place(x=5, y=30, width=190)
-#Item add window ends here
-'''
+combatantAddWindowLabel2 = TK.Label(combatantAddWindow, text="Enter Initiative Total") 
+combatantAddWindowLabel2.place(x=5, y=55, width=190, height=20)
+
+combatantAddWindowInitiative = TK.Entry(combatantAddWindow)
+combatantAddWindowInitiative.place(x=5, y=80, width=190, height=20)
+
+saveButton = TK.Button(combatantAddWindow, text = "Save", width = 35, command=addCombatant)
+saveButton.place(x=5, y=105, width=190)
+
+cancelButton = TK.Button(combatantAddWindow, text = "Cancel", width = 35, command=cancelAddCombatant)
+cancelButton.place(x=5, y=135, width=190)
+
+combatantAddWindow.mainloop()
 
 #Item add window starts here
 def openEffectAddWindow():
