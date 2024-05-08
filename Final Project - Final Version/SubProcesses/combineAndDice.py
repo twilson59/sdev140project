@@ -16,9 +16,21 @@ sheets = os.path.join(parentDir, "SpreadSheets")
 enemyFile = os.path.join(parentDir,sheets,"enemyData.xlsx")
 playerFile = os.path.join(parentDir,sheets,"playerData.xlsx")
 
-#concatenating the two data tables into one
-playerData = pd.read_excel(playerFile)
-enemyData = pd.read_excel(enemyFile)
+#concatenating the two data tables into one, with a try: except: block if a file is missing
+try: 
+    playerData = pd.read_excel(playerFile)
+except FileNotFoundError:
+    messagebox.showerror("Error","Your Player data file is missing.  Please create one!")
+    subprocess.Popen(["python", "playerCollect.py"])
+    exit(1)
+    
+try:
+    enemyData = pd.read_excel(enemyFile)
+except FileNotFoundError:
+    messagebox.showerror("Error","Your Enemy data file is missing.  Please create one!")
+    subprocess.Popen(["python", "enemyCollect.py"])
+    exit(1)
+
 tableInitiativeList = pd.concat([playerData, enemyData], ignore_index=True)
 
 #.loc[active, "Character name"]  Goes to the location referenced as Row, Column
@@ -70,7 +82,7 @@ def saveDiceRoll(diceRollValue):
         messagebox.showinfo("Done", "Initiative roll saved!")
         activeCharacter = tableInitiativeList.loc[active, "Character Name"]
         entryDiceRoll.delete(0, TK.END)
-        currentPlayer.config(text=f"Entering an initiative roll for\n {activeCharacter}")
+        currentPlayer.config(text=f"Roll a d20 for \n {activeCharacter}'s initiative")
         rollAndWrite.update()    
     else:
 #once the table is full, confrims that you're done, does a multi-level descending sort, and opens the next window
@@ -112,14 +124,14 @@ rollAndWrite.title("Roll some dice!")
 rollAndWrite.configure(background="lime green")
 
 
-currentPlayer = TK.Label(rollAndWrite, text=f"Entering an initiative roll for\n {activeCharacter}" , bg = "lime green", font = "Helvetica 14", wraplength=240)
-currentPlayer.place(x=10, y=10, width=240, height=40)
+currentPlayer = TK.Label(rollAndWrite, text=f"Roll a d20 for \n {activeCharacter}'s initiative" , bg = "lime green", font = "Helvetica 14", wraplength=240)
+currentPlayer.place(x=10, y=10, width=240, height=60)
 
 entryDiceRoll = TK.Entry(rollAndWrite, justify="center", width=4, font=("Helvetica", 72))
-entryDiceRoll.place(x=10, y=60, width=240, height=120)
+entryDiceRoll.place(x=10, y=80, width=240, height=120)
 
 rollForMeButton = TK.Button(rollAndWrite, text = "Roll for me!", font = "Helvetica 14", command = lambda: hurlTheDice())
-rollForMeButton.place(x=10, y=200, width=240, height=80)
+rollForMeButton.place(x=10, y=210, width=240, height=80)
 
 commitButton = TK.Button(rollAndWrite, text = "Confirm Roll", height=5, width=20, font = "Helvetica 14", command = lambda: saveDiceRoll(entryDiceRoll.get()))
 commitButton.place(x=10, y=300, width=240, height=80)

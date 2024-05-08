@@ -37,24 +37,33 @@ active = 0
 roundCounter = 1
 tableInitiativeList = pd.read_excel(table)
 playerList = tableInitiativeList['Character Name'].str.strip().to_list()
+combatTime = 0
 
 
 
 #refresh the data in the main window
 #This function gets called a lot!
-def updateMainWIndow():
+def updateMainWindow():
     global active
     global prettyListOfEffects
     global playerList
     global roundCounter
     global windowPlayerList
     global windowActivePlayer
+    global combatTime
+
+    combatTime = (roundCounter*6) - 6
 
 #pandas has a to_list function that will write all of the contents of a column or row to a list
     playerList = tableInitiativeList['Character Name'].str.strip().to_list()
 
 #I had to set the datatype of the column so that it could accept lists as input
     tableInitiativeList['Spell Effects'] = tableInitiativeList['Spell Effects'].astype(object)
+    
+    for row in range(len(playerList)):
+        tableRow = row
+        if pd.notnull(tableInitiativeList.at[tableRow, 'Spell Effects']):
+            playerList[row] = playerList[row] + " *" 
 #Checks the row, column location, and creates a list that looks good for display purposes
 #Or writes it as "None"
     currentActiveEffects = tableInitiativeList.at[active, 'Spell Effects']
@@ -70,8 +79,12 @@ def updateMainWIndow():
     windowActivePlayer = tk.Label(combatWindow)
     windowActivePlayer.config(text=f"Active combatant\n\n{playerList[active]}\n\n Combat round: {roundCounter}  Turn: {active+1}\n\n Active Effects: {prettyListOfEffects}")  
     windowActivePlayer.config(bg = "white", font = "Helvetica 14 bold", justify="center", wraplength=375)
-    windowActivePlayer.place(x=200, y=10, width=395, height=400)
+    windowActivePlayer.place(x=200, y=10, width=395, height=360)
+    windowTimeElapsed.place(x=200, y=370, width=395, height=40)
+    windowTimeElapsed.config(text=f"Time elapsed: {combatTime} seconds")  
+    windowTimeElapsed.config(bg = "white", font = "Helvetica 14 bold", justify="center", wraplength=375)
 
+    print(tableInitiativeList)
 
 def victoryScreen():
 
@@ -133,49 +146,100 @@ def defeatScreen():
 
 
 
-def addCombatant(alignment, combatantAddWindowName, combatantAddWindowInitiative):
+def addCombatant(name, initiativeBonus, dexterityBonus, dexterityScore, hitPoints, diceRoll, alignment):
     global tableInitiativeList
 
 #Error checking
-    if combatantAddWindowName == "":
+    if name == "":
         messagebox.showerror("Error",f"Name cannot be blank")
         return
 
-    if combatantAddWindowName > 64:
+    if len(name) > 64:
         messagebox.showerror("Error",f"Name is too long")
         return      
 
     try: 
-        combatantAddWindowInitiative = int(combatantAddWindowInitiative)
+        initiativeBonus = int(initiativeBonus)
     except ValueError:
-        messagebox.showerror("Error",f"Please enter a whole number for your initiative")
+        messagebox.showerror("Error",f"Please enter a whole number for your initiative bonus")
         return
-    if combatantAddWindowInitiative > 30:
-        messagebox.showerror("Error",f"{combatantAddWindowInitiative} is too high")
+    if initiativeBonus > 10:
+        messagebox.showerror("Error",f"{initiativeBonus} is too high")
         return
-    if combatantAddWindowInitiative < -10:
-        messagebox.showerror("Error",f"{combatantAddWindowInitiative} is too low")
+    if initiativeBonus < -10:
+        messagebox.showerror("Error",f"{initiativeBonus} is too low")
         return
+    
+    try: 
+        dexterityBonus = int(dexterityBonus)
+    except ValueError:
+        messagebox.showerror("Error",f"Please enter a whole number for your dexterity bonus")
+        return
+    if dexterityBonus > 10:
+        messagebox.showerror("Error",f"{dexterityBonus} is too high")
+        return
+    if dexterityBonus < -10:
+        messagebox.showerror("Error",f"{dexterityBonus} is too low")
+        return
+
+    try: 
+        dexterityScore = int(dexterityScore)
+    except ValueError:
+        messagebox.showerror("Error",f"Please enter a whole number for your dexterity score")
+        return
+    if dexterityScore > 30:
+        messagebox.showerror("Error",f"{dexterityScore} is too high")
+        return
+    if dexterityScore < 1:
+        messagebox.showerror("Error",f"{dexterityScore} is too low")
+        return
+    
+    try: 
+        hitPoints = int(hitPoints)
+    except ValueError:
+        messagebox.showerror("Error",f"Please enter a whole number for your hit points")
+        return
+    if hitPoints > 1500:
+        messagebox.showerror("Error",f"{hitPoints} is too high")
+        return
+    if hitPoints < 1:
+        messagebox.showerror("Error",f"{hitPoints} is too low")
+        return
+    
+    try: 
+        diceRoll = int(diceRoll)
+    except ValueError:
+        messagebox.showerror("Error",f"Please enter a whole number for your dice roll")
+        return
+    if diceRoll > 20:
+        messagebox.showerror("Error",f"{diceRoll} is too high")
+        return
+    if hitPoints < 1:
+        messagebox.showerror("Error",f"{diceRoll} is too low")
+        return
+    
+    initiativeTotal = diceRoll + initiativeBonus
 
 #Creates a row with the user's input, then concatenates it with the main data table
     if alignment == 1:
-        newRow = pd.Series({'Character Name': combatantAddWindowName,'Initiative Total': combatantAddWindowInitiative, 'Good':1})
+        newRow = pd.Series({'Character Name': name,'Initiative Total': initiativeTotal,'Initiative Bonus':initiativeBonus, 'Dice Roll':diceRoll, 'Dexterity Bonus':dexterityBonus, 'Dexterity Score': dexterityScore, 'Hit Points':hitPoints, 'Good':1, 'Bad':0})
         tableInitiativeList = pd.concat([tableInitiativeList, newRow.to_frame().T], ignore_index=True)
     else:
-        newRow = pd.Series({'Character Name': combatantAddWindowName,'Initiative Total': combatantAddWindowInitiative, 'Bad':1})
+        newRow = pd.Series({'Character Name': name,'Initiative Total': initiativeTotal,'Initiative Bonus':initiativeBonus, 'Dice Roll':diceRoll, 'Dexterity Bonus':dexterityBonus, 'Dexterity Score': dexterityScore, 'Hit Points':hitPoints, 'Bad':1, 'Good': 0})
         tableInitiativeList = pd.concat([tableInitiativeList, newRow.to_frame().T], ignore_index=True)
 
 #Then resorts the list, and re-indexes it    
     tableInitiativeList = tableInitiativeList.sort_values(
-            by=["Initiative Total"], ascending=[False])
-    tableInitiativeList = tableInitiativeList.reset_index(drop=True)
+        by=["Initiative Total", "Initiative Bonus", "Dexterity Bonus", "Dexterity Score", "Dice Roll", "Hit Points", "Character Name"],
+        ascending=[False, False, False, False, False, False, False])
 
 #Updates the displayed data    
-    updateMainWIndow()
+    updateMainWindow()
 
 
 #Adds spell effects to the player table
 def addToTable(roundSelection, effectAddWindowTextBox, effectAddListBox, persistentEffect):
+
     global tableInitiativeList
 
     playerList = tableInitiativeList['Character Name'].str.strip().to_list()
@@ -249,7 +313,8 @@ def addToTable(roundSelection, effectAddWindowTextBox, effectAddListBox, persist
         else:   
             turnsLeft = [turnsLeft]
             tableInitiativeList.at[rowToEdit, 'Spell Expirations'] = turnsLeft
-    updateMainWIndow()
+        
+    updateMainWindow()
 
 
           
@@ -283,7 +348,7 @@ def nextCombatant():
     
 #Reduce counts is what counts down as mentioned previously
     reduceCounts()
-    updateMainWIndow()
+    updateMainWindow()
 #used for debugging, will be commented out when I submit
    # print(tableInitiativeList)
 
@@ -333,7 +398,7 @@ def reduceCounts():
             tableInitiativeList.at[rowToEdit, 'Spell Expirations'] = countdown
             tableInitiativeList.at[rowToEdit, 'Spell Effects'] = effectListItems
         index += 1
-    updateMainWIndow()
+    updateMainWindow()
 
 
 def openSpellRemoveWindowOne():
@@ -390,14 +455,14 @@ def openSpellRemoveWindowOne():
     yesButton = tk.Button(spellRemoveWindowOne, text = "Confirm", command =lambda: [runNameSearch(spellRemoveWindowOneDropdown.get()),
                                                                                     spellRemoveWindowOneDropdown.set(""),
                                                                                     spellRemoveWindowOne.withdraw(),
-                                                                                    updateMainWIndow()
+                                                                                    updateMainWindow()
                                                                                     ])
     #send user input to the next function
     yesButton.place(x=10, y=65, width=180, height=30)
 
     noButton = tk.Button(spellRemoveWindowOne, text = "Cancel", command = lambda:[spellRemoveWindowOneDropdown.set(""),
                                                                                   spellRemoveWindowOne.withdraw(),
-                                                                                  updateMainWIndow()
+                                                                                  updateMainWindow()
                                                                                   ])
     noButton.place(x=10, y=105, width=180, height=30)
 
@@ -429,7 +494,7 @@ def openSpellRemoveWindowTwo(masterTableRow, nameToSearch):
                                                                                     masterTableRow, 
                                                                                     spellRemoveWindowTwoDropdown.current()),
                                                                                    spellRemoveWindowTwo.withdraw(),
-                                                                                   updateMainWIndow()
+                                                                                   updateMainWindow()
                                                                                    ])
 #uses current(), similar to get() and passes to the third and final function
 #since current returns the index position of the item selected, it will correspond to
@@ -440,7 +505,7 @@ def openSpellRemoveWindowTwo(masterTableRow, nameToSearch):
 
     noButton = tk.Button(spellRemoveWindowTwo, text = "Cancel", command = lambda: [spellRemoveWindowTwoDropdown.set(""),
                                                                                    spellRemoveWindowTwo.withdraw(),
-                                                                                   updateMainWIndow()
+                                                                                   updateMainWindow()
                                                                                    ])
     noButton.place(x=10, y=120, width=180, height=30)
 
@@ -534,7 +599,7 @@ def openEffectAddWindow():
                                                                                         longEffectCheck.deselect(),
                                                                                         effectAddListBox.selection_clear(0, tk.END),
                                                                                         effectAddWindow.withdraw(),
-                                                                                        updateMainWIndow()
+                                                                                        updateMainWindow()
                                                                                         ])   
 #Does a bunch of .gets to pass data to the next function                                                                                        
     saveCloseButton.place(x=10, y=460, width=180, height=30)
@@ -544,7 +609,7 @@ def openEffectAddWindow():
                                                                                         roundSelection.set(""),
                                                                                         longEffectCheck.deselect(),
                                                                                         effectAddListBox.selection_clear(0, tk.END),
-                                                                                        updateMainWIndow()
+                                                                                        updateMainWindow()
                                                                                         ])                                                                                       
     saveOpenButton.place(x=10, y=500, width=180, height=30)
 
@@ -553,7 +618,7 @@ def openEffectAddWindow():
                                                                                     roundSelection.set(""),
                                                                                     longEffectCheck.deselect(),
                                                                                     effectAddListBox.selection_clear(0, tk.END),
-                                                                                    updateMainWIndow(),
+                                                                                    updateMainWindow(),
                                                                                     effectAddWindow.withdraw()
                                                                                     ])
     cancelButton.place(x=10, y=540, width=180, height=30)
@@ -591,7 +656,7 @@ def openCombatantRemoveWindow():
     yesButton = tk.Button(combatantRemoveWindow, text = "Confirm", command = lambda: [removeCombatant(playerListDropdown.current()),
                                                                                 playerListDropdown.set(""),
                                                                                 combatantRemoveWindow.withdraw(),
-                                                                                updateMainWIndow()
+                                                                                updateMainWindow()
                                                                                 ])
     #.current gets a list index, since the list is generated from the data table
     #The list index will match the data table row
@@ -599,7 +664,7 @@ def openCombatantRemoveWindow():
 
     noButton = tk.Button(combatantRemoveWindow, text = "Cancel", command = lambda: [playerListDropdown.set(""),
                                                                                 combatantRemoveWindow.withdraw(),
-                                                                                updateMainWIndow()
+                                                                                updateMainWindow()
                                                                                 ])
     noButton.place(x=10, y=105, width=180, height=30)
 
@@ -648,7 +713,7 @@ def removeCombatant(rowToRemove):
     else:
         prettyListOfEffects = "None"
 
-    updateMainWIndow()
+    updateMainWindow()
 
 
 
@@ -659,58 +724,93 @@ def openCombatantAddWindow():
 
     def combatantAddWindowResetAndMinimize():
         combatantAddWindowName.delete(0, tk.END)
-        combatantAddWindowInitiative.delete(0, tk.END)
         combatantAddWindow.withdraw()
 
     combatantAddWindow = tk.Tk()
-    combatantAddWindow.geometry("200x230")
+    combatantAddWindow.geometry("200x450")
     combatantAddWindow.title("Add someone to the initiative list")
 
     
 
-    combatantAddWindowLabel1 = tk.Label(combatantAddWindow, text="Enter Name") 
+    combatantAddWindowLabel1 = tk.Label(combatantAddWindow, text="Enter Name", anchor="center") 
     combatantAddWindowLabel1.place(x=10, y=10, width=180, height=20)
 
     combatantAddWindowName = tk.Entry(combatantAddWindow)
     combatantAddWindowName.place(x=10, y=35, width=180, height=20)
 
-    combatantAddWindowLabel2 = tk.Label(combatantAddWindow, text="Enter Initiative Total") 
+    combatantAddWindowLabel2 = tk.Label(combatantAddWindow, text="Enter Initiative Bonus", anchor="center") 
     combatantAddWindowLabel2.place(x=10, y=65, width=180, height=20)
 
-    combatantAddWindowInitiative = tk.Entry(combatantAddWindow)
-    combatantAddWindowInitiative.place(x=10, y=90, width=180, height=20)
+    combatantAddWindowInitiativeBonus = tk.Entry(combatantAddWindow)
+    combatantAddWindowInitiativeBonus.place(x=10, y=90, width=180, height=20)
 
+    combatantAddWindowLabel3 = tk.Label(combatantAddWindow, text="Enter Dexterity Bonus", anchor="center") 
+    combatantAddWindowLabel3.place(x=10, y=120, width=180, height=20)
+
+    combatantAddWindowDexterityBonus = tk.Entry(combatantAddWindow)
+    combatantAddWindowDexterityBonus.place(x=10, y=145, width=180, height=20)
+
+    combatantAddWindowLabel4 = tk.Label(combatantAddWindow, text="Enter Dexterity Score", anchor="center") 
+    combatantAddWindowLabel4.place(x=10, y=175, width=180, height=20)
+
+    combatantAddWindowDexterityScore = tk.Entry(combatantAddWindow)
+    combatantAddWindowDexterityScore.place(x=10, y=200, width=180, height=20)
+
+    combatantAddWindowLabel5 = tk.Label(combatantAddWindow, text="Enter Hit Points", anchor="center") 
+    combatantAddWindowLabel5.place(x=10, y=230, width=180, height=20)
+
+    combatantAddWindowHitPoints = tk.Entry(combatantAddWindow)
+    combatantAddWindowHitPoints.place(x=10, y=255, width=180, height=20)
+
+
+    combatantAddWindowLabel6 = tk.Label(combatantAddWindow, text="Enter Initiative Dice Roll", anchor="center") 
+    combatantAddWindowLabel6.place(x=10, y=285, width=180, height=20)
+
+    combatantAddWindowDiceRoll = tk.Entry(combatantAddWindow)
+    combatantAddWindowDiceRoll.place(x=10, y=310, width=180, height=20)
+    
     alignment = tk.IntVar(combatantAddWindow) #had to specify which window
 
 #uses radio buttons to specifiy if it's an enemy or ally
 #since the variable is the same, it will only allow one to be selected
     combatantAddWindowRadioAlly = tk.Radiobutton(combatantAddWindow, text="Ally", variable=alignment, value=1)
-    combatantAddWindowRadioAlly.place(x=10, y=120, width=80, height=20)
+    combatantAddWindowRadioAlly.place(x=10, y=340, width=80, height=20)
 
     combatantAddWindowRadioEnemy = tk.Radiobutton(combatantAddWindow, text="Enemy", variable=alignment, value=0)
-    combatantAddWindowRadioEnemy.place(x=100, y=120, width=80, height=20)
+    combatantAddWindowRadioEnemy.place(x=100, y=340, width=80, height=20)
 
 
 
 
 
-    saveButton = tk.Button(combatantAddWindow, text = "Confirm", width = 35, command= lambda: [(alignment.get(), 
+    saveButton = tk.Button(combatantAddWindow, text = "Confirm", width = 35, command= lambda: [addCombatant
+                                                                                            (
                                                                                             combatantAddWindowName.get(), 
-                                                                                            combatantAddWindowInitiative.get()),
+                                                                                            combatantAddWindowInitiativeBonus.get(),
+                                                                                            combatantAddWindowDexterityBonus.get(),
+                                                                                            combatantAddWindowDexterityScore.get(),
+                                                                                            combatantAddWindowHitPoints.get(),
+                                                                                            combatantAddWindowDiceRoll.get(),
+                                                                                            alignment.get()                                                                                     
+                                                                                            ),
                                                                                             combatantAddWindowName.delete(0, tk.END),
-                                                                                            combatantAddWindowInitiative.delete(0, tk.END),
-                                                                                            updateMainWIndow(),
+                                                                                            combatantAddWindowInitiativeBonus.delete(0, tk.END),
+                                                                                            combatantAddWindowDexterityBonus.delete(0, tk.END),
+                                                                                            combatantAddWindowDexterityScore.delete(0, tk.END),
+                                                                                            combatantAddWindowHitPoints.delete(0, tk.END),
+                                                                                            combatantAddWindowDiceRoll.delete(0, tk.END),
+                                                                                            updateMainWindow(),
                                                                                             combatantAddWindow.withdraw()
                                                                                             ])
     #more get()s to pass data to the next function                                                                                           
-    saveButton.place(x=10, y=150, width=180, height=30)
+    saveButton.place(x=10, y=370, width=180, height=30)
 
     cancelButton = tk.Button(combatantAddWindow, text = "Cancel", width = 35, command=lambda: [combatantAddWindowName.delete(0, tk.END),
-                                                                                            combatantAddWindowInitiative.delete(0, tk.END),
+                                                                                            
                                                                                             combatantAddWindow.withdraw(),
-                                                                                            updateMainWIndow()
+                                                                                            updateMainWindow()
                                                                                             ])
-    cancelButton.place(x=10, y=190, width=180, height=30)
+    cancelButton.place(x=10, y=410, width=180, height=30)
 
     combatantAddWindow.protocol("WM_DELETE_WINDOW", combatantAddWindowResetAndMinimize)
 
@@ -733,12 +833,16 @@ windowPlayerList = tk.Label(combatWindow)
 windowPlayerList.place(x=10, y=10, width=180, height=400)
 
 windowActivePlayer = tk.Label(combatWindow)
-windowActivePlayer.place(x=200, y=10, width=395, height=400)
+windowActivePlayer.place(x=200, y=10, width=395, height=360)
+windowTimeElapsed = tk.Label(combatWindow)
+windowTimeElapsed.place(x=200, y=370, width=395, height=40)
 
-updateMainWIndow()
+updateMainWindow()
 windowPlayerList.config(text=f"Initiative Order\n\n{'\n'.join(playerList)}\n\nCombat round: {roundCounter}",bg = "white", bd = 2, font = "Helvetica")
 windowActivePlayer.config(text=f"Active combatant\n\n{playerList[active]}\n\n Combat round: {roundCounter}  Turn: {active+1}\n\n Active Effects: {prettyListOfEffects}")  
 windowActivePlayer.config(bg = "white", font = "Helvetica 14 bold", justify="center", wraplength=375)
+windowTimeElapsed.config(text=f"Time elapsed: {combatTime} seconds")  
+windowTimeElapsed.config(bg = "white", font = "Helvetica 14 bold", justify="center", wraplength=375)
 
 
 
